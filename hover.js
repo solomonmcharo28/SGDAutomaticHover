@@ -1,3 +1,4 @@
+//* SPDX-License-Identifier: MIT
 // ---------- Helpers ----------
 function clamp01(x){ return Math.max(0, Math.min(1, x)); }
 function clamp255(x){ return Math.round(Math.max(0, Math.min(255, x))); }
