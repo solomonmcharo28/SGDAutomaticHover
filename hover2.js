@@ -270,33 +270,28 @@ function setCssVars({ base01, baseText, hover01, hoverText, pageBg01, hoverOpt }
   document.documentElement.style.setProperty("--page-bg", rgbToCss(pageBg255));
 const th = hoverOpt.theta.map(x => Number(x).toFixed(4)).join(", ");
 
-const readoutText = [
-  section('Base state'),
+readout.textContent =
+`Base background (B₀):           ${rgbToCss(base255)}
 
-  line('Base text (T₀):', rgbToCss(baseText255)),
-  line('Base background (B₀):', rgbToCss(baseBg255)),
-  '',
-  line('Base hover text (SGD):', rgbToCss(baseHoverText255)),
-  lossLine(baseHoverText.loss),
+Base text via SGD (T₀):
+  color = ${rgbToCss(baseText255)}
+  loss  = ${baseText.loss.toFixed(4)}
 
-  section('Hover state'),
+Hover parameters via SGD (θ):
+  θ     = [${th}]
+  loss  = ${hoverOpt.loss.toFixed(4)}
 
-  line('Hover parameters (θ):', `[${th}]`),
-  lossLine(hoverOpt.loss),
-  '',
-  line('Hover background (B₁):', rgbToCss(hoverBg255)),
-  '',
-  line('Hover text (SGD):', rgbToCss(hoverText255)),
-  lossLine(hoverText.loss),
+Hover background (B₁, derived):
+  color = ${rgbToCss(hover255)}
 
-  section('Transformation chain'),
+Hover text via SGD (T₁):
+  color = ${rgbToCss(hoverText255)}
+  loss  = ${hoverText.loss.toFixed(4)}
 
-  'T₀ → derive B₀ → SGD(T₀, B₀) → T₀ʰ',
-  '                ↓',
-  '              derive B₁ → SGD(T₀ʰ, B₁) → T₁'
-].join('\n');
-
-readout.textContent = readoutText;
+Chain:
+B₀ → SGD(B₀) → T₀
+     ↓
+   derive B₁ → SGD(T₀, B₁) → T₁`;
 
 
 }
