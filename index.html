@@ -1,37 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SGD HSV Hover Demo</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SGD Color Chain</title>
   <link rel="stylesheet" href="hover.css" />
 </head>
 <body>
+  <main class="wrap">
+    <h1>Form → Button → Text (SGD) → Hover → Hover Text (SGD)</h1>
 
-  <form id="colorForm" class="color-form">
-    <label for="rgbInput">
-      Button RGB (R, G, B):
-    </label>
-    <input
-      id="rgbInput"
-      name="rgb"
-      type="text"
-      value="219, 234, 254"
-      placeholder="e.g. 37, 99, 235"
-      required
-    />
-    <button type="submit">Apply</button>
-  </form>
+    <form id="colorForm" class="card">
+      <label>
+        Button RGB (0–255 each)
+        <input id="rgbInput" name="rgb" type="text" value="34, 139, 230" placeholder="e.g. 34, 139, 230" />
+      </label>
+      <button type="submit">Apply</button>
+      <p class="hint">Tip: “240,240,240” or “10,10,10”</p>
+    </form>
 
-  <button
-    id="demoBtn"
-    class="btn sgd-hover"
-    style="--bg:#0b1020; --fg: rgb(219 234 254);"
-  >
-    Hover me
-  </button>
-  <p>This site and method is credited to Solomon Mcharo, Constance Develle and Brittany Quan</p>
-  <script src="hover.js" defer></script>
+    <section class="demo">
+      <button id="cta" class="cta">Hover me</button>
+      <div class="readout" id="readout"></div>
+    </section>
+  </main>
+
+  <script src="hover.js"></script>
 </body>
 </html>
+
