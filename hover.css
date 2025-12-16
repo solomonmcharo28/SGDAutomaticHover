@@ -1,52 +1,85 @@
+:root{
+  --btn-bg: rgb(34,139,230);
+  --btn-fg: rgb(255,255,255);
+
+  --btn-hover-bg: rgb(26,110,190);
+  --btn-hover-fg: rgb(255,255,255);
+
+  --page-bg: #0b0c10;
+}
+
+*{ box-sizing: border-box; }
 body{
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  padding: 24px;
-  background: #f8fafc;
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--page-bg);
+  color: #e9eef5;
 }
-
-.color-form{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
+.wrap{
+  max-width: 900px;
+  margin: 48px auto;
+  padding: 0 16px;
 }
+h1{ font-size: 20px; font-weight: 650; margin: 0 0 16px; }
 
-.color-form label{
-  font-size: 14px;
+.card{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
 }
-
-.color-form input{
-  padding: 6px 8px;
-  width: 180px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+label{ display: grid; gap: 8px; }
+input{
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.25);
+  color: #fff;
 }
-
-.color-form button{
-  padding: 6px 10px;
+form button{
+  width: fit-content;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  background: rgba(255,255,255,0.14);
+  color: #fff;
   cursor: pointer;
 }
+.hint{ margin: 0; opacity: 0.8; font-size: 13px; }
 
-/* Button styles unchanged */
-.btn{
-  font: 600 16px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in oklab, var(--fg), transparent 65%);
-  cursor: pointer;
-
-  background: var(--bg, #0b1020);
-  color: var(--fg, #dbeafe);
-
-  transition:
-    transform .12s ease,
-    background-color .15s ease,
-    color .15s ease,
-    border-color .15s ease;
+.demo{
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+  align-items: start;
 }
 
-.btn:hover{ transform: translateY(-1px); }
+.cta{
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-size: 16px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 200ms linear, color 200ms linear, transform 120ms ease;
+}
+.cta:hover{
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-fg);
+  transform: translateY(-1px);
+}
 
-.sgd-hover:hover{
-  color: var(--hover-fg, var(--fg));
-  border-color: color-mix(in oklab, var(--hover-fg, var(--fg)), transparent 60%);
+.readout{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  opacity: 0.92;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 12px;
+  white-space: pre-wrap;
 }
