@@ -271,14 +271,35 @@ function setCssVars({ base01, baseText, hover01, hoverText, pageBg01, hoverOpt }
 const th = hoverOpt.theta.map(x => Number(x).toFixed(4)).join(", ");
 
 readout.textContent =
-`Base button background (B):     ${rgbToCss(base255)}
-Base text via SGD (T_base):      ${rgbToCss(baseText255)}   loss=${baseText.loss.toFixed(4)}
+`=== BASE STATE =================================
 
-Hover params via SGD (theta):    [${th}]   loss=${hoverOpt.loss.toFixed(4)}
-Hover background (from algo):    ${rgbToCss(hover255)}
-Hover text via SGD (T_hover):    ${rgbToCss(hoverText255)}  loss=${hoverText.loss.toFixed(4)}
+Base text (T₀):                 ${rgbToCss(baseText255)}
+Base background (B₀, derived):  ${rgbToCss(baseBg255)}
 
-Chain: B → (SGD θ) → H(B,θ) → optimal hover text`;
+Base hover text (SGD):
+  T₀ʰ = ${rgbToCss(baseHoverText255)}
+  loss = ${baseHoverText.loss.toFixed(4)}
+
+=== HOVER STATE ================================
+
+Hover parameters (θ):
+  [${th}]
+  loss = ${hoverOpt.loss.toFixed(4)}
+
+Hover background (B₁):          ${rgbToCss(hoverBg255)}
+
+Hover text (SGD):
+  T₁ = ${rgbToCss(hoverText255)}
+  loss = ${hoverText.loss.toFixed(4)}
+
+=== TRANSFORMATION CHAIN =======================
+
+T₀
+ → derive B₀
+ → SGD(T₀, B₀) = T₀ʰ
+ → derive B₁
+ → SGD(T₀ʰ, B₁) = T₁
+`;
 
 }
 
