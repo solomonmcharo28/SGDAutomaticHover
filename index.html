@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SGD HSV Hover Demo</title>
+
+  <link rel="stylesheet" href="hover.css" />
+</head>
+<body>
+
+  <form id="colorForm" class="color-form">
+    <label for="rgbInput">
+      Button RGB (R, G, B):
+    </label>
+    <input
+      id="rgbInput"
+      name="rgb"
+      type="text"
+      value="219, 234, 254"
+      placeholder="e.g. 37, 99, 235"
+      required
+    />
+    <button type="submit">Apply</button>
+  </form>
+
+  <button
+    id="demoBtn"
+    class="btn sgd-hover"
+    style="--bg:#0b1020; --fg: rgb(219 234 254);"
+  >
+    Hover me
+  </button>
+
+  <script src="hover.js" defer></script>
+</body>
+</html>
