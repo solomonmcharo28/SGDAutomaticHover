@@ -1,170 +1,247 @@
-// === helpers & SGD (unchanged from previous version) ===
-// clamp01, wrap01, rgb↔hsv, luminance, computeHoverColor, etc.
+// ---------- Helpers ----------
+function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+function clamp255(x){ return Math.round(Math.max(0, Math.min(255, x))); }
 
-/***********************
- *  Form integration
- ***********************/
-function parseRgbInput(value){
-  const parts = value.split(',').map(v => parseInt(v.trim(), 10));
-  if (parts.length !== 3 || parts.some(v => isNaN(v) || v < 0 || v > 255)) {
-    return null;
-  }
-  return parts.map(v => v / 255);
+function parseRGB(text){
+  const parts = text.split(",").map(s => s.trim()).filter(Boolean);
+  if (parts.length !== 3) return null;
+  const nums = parts.map(n => Number(n));
+  if (nums.some(n => Number.isNaN(n))) return null;
+  return nums.map(clamp255);
 }
 
-function cssRgb01(rgb){
-  return `rgb(${Math.round(rgb[0]*255)} ${Math.round(rgb[1]*255)} ${Math.round(rgb[2]*255)})`;
-}
+function rgbToCss([r,g,b]){ return `rgb(${r}, ${g}, ${b})`; }
+function rgb01([r,g,b]){ return [r/255, g/255, b/255]; }
+function rgb255([r,g,b]){ return [clamp255(r), clamp255(g), clamp255(b)]; }
 
-function recompute(el){
-  const style = getComputedStyle(el);
-  const parse = c =>
-    c.match(/rgb[a]?\(([^)]+)\)/)[1]
-     .split(',')
-     .slice(0,3)
-     .map(v => parseFloat(v)/255);
-
-  const fg = parse(style.color);
-  const bg = parse(style.backgroundColor);
-
-  const hover = computeHoverColor(fg, bg);
-  el.style.setProperty('--hover-fg', cssRgb01(hover));
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('colorForm');
-  const input = document.getElementById('rgbInput');
-  const btn = document.getElementById('demoBtn');
-
-  // initial hover computation
-  recompute(btn);
-
-  form.addEventListener('submit', e => {
-    e.preventDefault(); // prevent page reload
-
-    const rgb = parseRgbInput(input.value);
-    if (!rgb) return;
-
-    btn.style.setProperty('--fg', cssRgb01(rgb));
-    recompute(btn);
-  });
-});
-/***********************
- *  Color utilities
- ***********************/
-const clamp01 = x => Math.min(1, Math.max(0, x));
-const wrap01  = x => (x % 1 + 1) % 1;
-
-function hexToRgb01(hex){
-  const s = hex.replace('#','');
-  const full = s.length === 3 ? s.split('').map(c=>c+c).join('') : s;
-  const n = parseInt(full, 16);
-  return [(n>>16&255)/255, (n>>8&255)/255, (n&255)/255];
-}
-
-function rgb01ToCss([r,g,b]){
-  return `rgb(${Math.round(r*255)} ${Math.round(g*255)} ${Math.round(b*255)})`;
-}
-
-function rgbToHsv([r,g,b]){
-  const max = Math.max(r,g,b), min = Math.min(r,g,b);
-  const d = max - min;
-  let h = 0;
-  if (d){
-    h = max===r ? ((g-b)/d)%6 : max===g ? (b-r)/d+2 : (r-g)/d+4;
-    h /= 6;
-  }
-  return [wrap01(h), max===0?0:d/max, max];
-}
-
-function hsvToRgb([h,s,v]){
-  const i = Math.floor(h*6);
-  const f = h*6 - i;
-  const p = v*(1-s);
-  const q = v*(1-f*s);
-  const t = v*(1-(1-f)*s);
-  return [
-    [v,t,p],[q,v,p],[p,v,t],
-    [p,q,v],[t,p,v],[v,p,q]
-  ][i%6];
-}
-
+// Relative luminance (sRGB -> linear)
 function srgbToLinear(c){
-  return c <= 0.04045 ? c/12.92 : ((c+0.055)/1.055)**2.4;
+  return (c <= 0.04045) ? (c/12.92) : Math.pow((c+0.055)/1.055, 2.4);
 }
-
-function luminance(rgb){
-  const [r,g,b] = rgb.map(srgbToLinear);
+function relLuminance(rgb01v){
+  const [r,g,b] = rgb01v.map(srgbToLinear);
   return 0.2126*r + 0.7152*g + 0.0722*b;
 }
 
-const softplus = x => Math.log1p(Math.exp(x));
-
-/***********************
- *  SGD optimizer
- ***********************/
-function computeHoverColor(rgb0, rgbBg){
-  const hsv0 = rgbToHsv(rgb0);
-  let d = [0,0,0];
-
-  const Ybg = luminance(rgbBg);
-
-  const loss = (dh,ds,dv)=>{
-    const h = wrap01(hsv0[0]+dh);
-    const s = clamp01(hsv0[1]+ds);
-    const v = clamp01(hsv0[2]+dv);
-    const rgb = hsvToRgb([h,s,v]);
-
-    const Y = luminance(rgb);
-    const legible = softplus(0.35 - Math.abs(Y - Ybg));
-
-    const dhWrap = Math.min(Math.abs(h-hsv0[0]), 1-Math.abs(h-hsv0[0]));
-    const stay =
-      140*dhWrap**2 +
-        7*(s-hsv0[1])**2 +
-        2*(v-hsv0[2])**2;
-
-    return legible + 0.35*stay;
-  };
-
-  let lr = 0.14;
-  const eps = 1e-3;
-
-  for(let i=0;i<90;i++){
-    const grad = [0,0,0].map((_,k)=>{
-      const dp = [...d]; dp[k]+=eps;
-      const dm = [...d]; dm[k]-=eps;
-      return (loss(...dp)-loss(...dm))/(2*eps);
-    });
-
-    d = d.map((v,i)=>v - lr*grad[i]);
-    lr *= 0.985;
-  }
-
-  return hsvToRgb([
-    wrap01(hsv0[0]+d[0]),
-    clamp01(hsv0[1]+d[1]),
-    clamp01(hsv0[2]+d[2])
-  ]);
+// WCAG-ish contrast ratio
+function contrastRatio(L1, L2){
+  const lighter = Math.max(L1, L2);
+  const darker  = Math.min(L1, L2);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
-/***********************
- *  Init on DOM ready
- ***********************/
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.sgd-hover').forEach(el=>{
-    const style = getComputedStyle(el);
+// ---------- Differentiable model pieces ----------
+/**
+ * Hover color as a differentiable function H(B).
+ * We'll do: H = mix(B, target, t) where target is a slightly darker + slightly shifted color.
+ * (This makes H depend on B smoothly, so “chain rule” applies.)
+ */
+function hoverFromBase(base01){
+  const t = 0.18;
 
-    const fg = style.color;
-    const bg = style.backgroundColor;
+  // Create a "darker & slightly cooler" target derived from base
+  const [r,g,b] = base01;
+  const target = [
+    clamp01(r * 0.82),
+    clamp01(g * 0.86),
+    clamp01(b * 0.92),
+  ];
 
-    const parse = c=>{
-      if(c.startsWith('#')) return hexToRgb01(c);
-      const m = c.match(/rgb[a]?\(([^)]+)\)/);
-      return m[1].split(',').slice(0,3).map(v=>parseFloat(v)/255);
-    };
+  // mix(base, target, t)
+  return [
+    (1 - t) * r + t * target[0],
+    (1 - t) * g + t * target[1],
+    (1 - t) * b + t * target[2],
+  ];
+}
 
-    const hover = computeHoverColor(parse(fg), parse(bg));
-    el.style.setProperty('--hover-fg', rgb01ToCss(hover));
-  });
+/**
+ * Text color parameterization (differentiable):
+ * represent text color in HSV-ish (we'll just use unconstrained RGB params through sigmoid)
+ * so SGD can move smoothly.
+ */
+function sigmoid(x){ return 1 / (1 + Math.exp(-x)); }
+function textColorFromParams(p){ // p: [pr,pg,pb] in R
+  return [sigmoid(p[0]), sigmoid(p[1]), sigmoid(p[2])]; // in [0,1]
+}
+
+/**
+ * Loss to maximize contrast: we minimize negative contrast + mild regularization.
+ * We want high contrast between background and text.
+ */
+function lossForText(bg01, text01){
+  const Lbg = relLuminance(bg01);
+  const Ltx = relLuminance(text01);
+  const cr = contrastRatio(Lbg, Ltx);
+
+  const targetContrast = 6.0;
+  const contrastLoss = Math.pow(Math.max(0, targetContrast - cr), 2);
+
+  // NEW: color target = complementary hue of background, reasonably saturated
+  const [h,s,v] = rgbToHsv(bg01);
+  const targetH = (h + 0.5) % 1;              // +180°
+  const targetS = clamp01(Math.max(0.55, s)); // keep some saturation
+  // pick a V that tends to be readable (not perfect, contrastLoss enforces readability)
+  const targetV = (Lbg > 0.5) ? 0.15 : 0.95;  // dark text on light bg, light on dark bg
+  const targetRgb = hsvToRgb([targetH, targetS, targetV]);
+
+  // “style” term: pull toward target color so it actually changes with bg
+  const styleWeight = 0.18; // increase if you want more variation
+  const styleLoss =
+    (text01[0]-targetRgb[0])**2 +
+    (text01[1]-targetRgb[1])**2 +
+    (text01[2]-targetRgb[2])**2;
+
+  // small regularization
+  const reg = 0.0015 * (text01[0]**2 + text01[1]**2 + text01[2]**2);
+
+  return contrastLoss + styleWeight * styleLoss + reg;
+}
+
+
+/**
+ * Numerical gradient (finite differences) for SGD.
+ * Good enough for UI. Keeps everything simple.
+ */
+function gradNumerical(bg01, params){
+  const eps = 1e-3;
+  const baseLoss = lossForText(bg01, textColorFromParams(params));
+  const g = [0,0,0];
+  for (let i=0;i<3;i++){
+    const p2 = params.slice();
+    p2[i] += eps;
+    const l2 = lossForText(bg01, textColorFromParams(p2));
+    g[i] = (l2 - baseLoss) / eps;
+  }
+  return { baseLoss, g };
+}
+
+/**
+ * SGD optimize text params given background.
+ */
+function optimizeText(bg01, {
+  steps = 160,
+  lr = 0.35,
+  initParams = [0,0,0]
+} = {}){
+  let p = initParams.slice();
+
+  for (let s=0; s<steps; s++){
+    const { g } = gradNumerical(bg01, p);
+    // SGD update
+    p = p.map((v, i) => v - lr * g[i]);
+    // mild lr decay
+    if (s === 60) lr *= 0.6;
+    if (s === 110) lr *= 0.7;
+  }
+  return { params: p, color01: textColorFromParams(p), loss: lossForText(bg01, textColorFromParams(p)) };
+}
+
+// ---------- Chain-rule pipeline ----------
+function applyChain(baseRgb255){
+  const base01 = rgb01(baseRgb255);
+
+  // 1) base button bg = B (from form)
+  // 2) base text chosen by SGD: T_base = argmin loss(B, T)
+  const baseText = optimizeText(base01, { initParams: [0.5, 0.5, 0.5] });
+
+  // 3) hover bg derived from base: H = H(B)
+  const hover01 = hoverFromBase(base01);
+
+  // 4) hover text chosen by SGD: T_hover = argmin loss(H(B), T)
+  //    (This is the second stage that depends on base via H(B), i.e. chain rule path.)
+  const hoverText = optimizeText(hover01, { initParams: baseText.params });
+
+  // 5) also set page background based on base (optional)
+  //    (a subtle darkened complementary feel)
+  const pageBg01 = [
+    clamp01(base01[0] * 0.10),
+    clamp01(base01[1] * 0.10),
+    clamp01(base01[2] * 0.10),
+  ];
+
+  return { base01, baseText, hover01, hoverText, pageBg01 };
+}
+
+// ---------- DOM wiring ----------
+const form = document.getElementById("colorForm");
+const rgbInput = document.getElementById("rgbInput");
+const cta = document.getElementById("cta");
+const readout = document.getElementById("readout");
+
+function setCssVars({ base01, baseText, hover01, hoverText, pageBg01 }){
+  const base255 = rgb255(base01.map(v => v*255));
+  const baseText255 = rgb255(baseText.color01.map(v => v*255));
+  const hover255 = rgb255(hover01.map(v => v*255));
+  const hoverText255 = rgb255(hoverText.color01.map(v => v*255));
+  const pageBg255 = rgb255(pageBg01.map(v => v*255));
+
+  document.documentElement.style.setProperty("--btn-bg", rgbToCss(base255));
+  document.documentElement.style.setProperty("--btn-fg", rgbToCss(baseText255));
+  document.documentElement.style.setProperty("--btn-hover-bg", rgbToCss(hover255));
+  document.documentElement.style.setProperty("--btn-hover-fg", rgbToCss(hoverText255));
+  document.documentElement.style.setProperty("--page-bg", rgbToCss(pageBg255));
+
+  readout.textContent =
+`Base button background (B):     ${rgbToCss(base255)}
+Base text via SGD (T_base):      ${rgbToCss(baseText255)}   loss=${baseText.loss.toFixed(4)}
+
+Hover background H(B):           ${rgbToCss(hover255)}
+Hover text via SGD (T_hover):    ${rgbToCss(hoverText255)}  loss=${hoverText.loss.toFixed(4)}
+
+Chain: B → H(B) → optimal hover text`;
+}
+
+function applyFromInput(){
+  const rgb = parseRGB(rgbInput.value);
+  if (!rgb){
+    readout.textContent = "Invalid RGB. Use format: r, g, b  (e.g. 34, 139, 230)";
+    return;
+  }
+  const result = applyChain(rgb);
+  setCssVars(result);
+}
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  applyFromInput();
 });
+
+// initial paint
+applyFromInput();
+
+function rgbToHsv([r,g,b]) {
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  const d = max - min;
+  let h = 0;
+  const s = max === 0 ? 0 : d / max;
+  const v = max;
+
+  if (d !== 0) {
+    switch (max) {
+      case r: h = ((g - b) / d) % 6; break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+    if (h < 0) h += 1;
+  }
+  return [h, s, v];
+}
+
+function hsvToRgb([h,s,v]) {
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+
+  switch (i % 6) {
+    case 0: return [v, t, p];
+    case 1: return [q, v, p];
+    case 2: return [p, v, t];
+    case 3: return [p, q, v];
+    case 4: return [t, p, v];
+    case 5: return [v, p, q];
+  }
+}
