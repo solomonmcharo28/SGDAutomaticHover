@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SGD Color Chain</title>
+  <link rel="stylesheet" href="hover2.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>Form → Button → Text (SGD) → Button Hover → Hover Text (SGD)</h1>
+
+    <form id="colorForm" class="card">
+      <label>
+        Button RGB (0–255 each)
+        <input id="rgbInput" name="rgb" type="text" value="34, 139, 230" placeholder="e.g. 34, 139, 230" />
+      </label>
+      <button type="submit">Apply</button>
+      <p class="hint">Tip: “240,240,240” or “10,10,10" or "23, 40, 35”</p>
+    </form>
+
+    <section class="demo">
+      <button id="cta" class="cta">Hover me</button>
+      <div class="readout" id="readout"></div>
+    </section>
+
+    <p>This method/technique is covered under the MIT license and is attributed to Solomon Mcharo, Constance Develle and Brittany Quan.</p>
+
+  </main>
+   
+ 
+
+  <script src="hover2.js"></script>
+</body>
+</html>
