@@ -14,6 +14,7 @@ function parseRGB(text){
 function rgbToCss([r,g,b]){ return `rgb(${r}, ${g}, ${b})`; }
 //Floating Point Post - Claudi Sinclair
 //It is a one to one conversion from the 0-255 scale to the 0-1 scale as we are allowed to put floating point inputs - Solomon Mcharo and Constance Develle
+//NB: Lossless Conversion -  Madeline Young
 function rgb01([r,g,b]){ return [r/255, g/255, b/255]; }
 function rgb255([r,g,b]){ return [clamp255(r), clamp255(g), clamp255(b)]; }
 
